@@ -1,0 +1,465 @@
+
+
+#include <stdio.h>
+
+struct Point { 
+   int x, y; 
+}; 
+  
+int main() 
+{ 
+   struct Point p1 = {0, 1}; 
+  
+   // Accesing members of point p1 
+   p1.x = 20; 
+   printf ("x = %d, y = %d", p1.x, p1.y); 
+  
+   return 0; 
+}
+
+
+
+
+#include <stdio.h>
+
+struct Point { 
+   int x, y; 
+} p1g = {2,3};
+
+int main() 
+{ 
+   struct Point p1 = {0, 1}; 
+  
+   // Accesing members of point p1 
+   p1.x = 20; 
+   printf ("x = %d, y = %d\n", p1.x, p1.y); 
+   // Accesing members of point p1g
+   p1g.x = 40; 
+   printf ("x = %d, y = %d\n", p1g.x, p1g.y); 
+  
+   return 0; 
+}
+
+
+
+
+#include <stdio.h>
+
+typedef struct Point { 
+   int x, y; 
+} POINT;
+
+int main() 
+{ 
+   POINT p1 = {0, 1}; 
+  
+   // Accesing members of point p1 
+   p1.x = 20; 
+   printf ("x = %d, y = %d\n", p1.x, p1.y); 
+  
+   return 0; 
+}
+
+
+
+
+#include <stdio.h>
+
+typedef struct Point { 
+   int x, y; 
+} POINT;
+
+int main() 
+{ 
+   POINT p1 = {0, 1}; 
+   POINT *pptr = &p1;
+  
+   // Accesing members of point p1 
+   pptr->x = 20; 
+   (*pptr).x=50;
+   printf ("x = %d, y = %d\n", p1.x, pptr->y); 
+  
+   return 0; 
+}
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+
+typedef struct Point { 
+   int x, y; 
+} POINT;
+
+#define SIZE 10
+
+int main() 
+{ 
+   POINT p1arr[SIZE]; 
+   POINT *pptr, *tptr;
+   
+   pptr=calloc(sizeof(POINT),SIZE);
+   if (!pptr) {
+       perror("calloc");
+       exit(1);
+   }
+   
+   for (int i=0; i<SIZE; i++) {
+       p1arr[i].x=i*2;
+       p1arr[i].y=i*3;
+   }
+   
+   bcopy(p1arr,pptr,SIZE*sizeof(POINT));
+
+   tptr=pptr;
+   for (int i=0; i<SIZE; i++, tptr++) {
+       printf("%d: %d %d\n",i,tptr->x, tptr->y);
+   }
+   
+   
+   return 0; 
+}
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+
+typedef struct Point { 
+   int x, y; 
+} POINT;
+
+#define SIZE 10
+
+POINT pinit(int i)
+{
+    POINT p;
+    p.x=i*2;
+    p.y=i*3;
+    return(p);
+}
+
+int main() 
+{ 
+   POINT p1arr[SIZE]; 
+   POINT *pptr, *tptr;
+   
+   pptr=calloc(sizeof(POINT),SIZE);
+   if (!pptr) {
+       perror("calloc");
+       exit(1);
+   }
+   
+   for (int i=0; i<SIZE; i++) {
+       p1arr[i]=pinit(i);
+   }
+   
+   bcopy(p1arr,pptr,SIZE*sizeof(POINT));
+
+   tptr=pptr;
+   for (int i=0; i<SIZE; i++, tptr++) {
+       printf("%d: %d %d\n",i,tptr->x, tptr->y);
+   }
+   
+   
+   return 0; 
+}
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+
+typedef struct Point { 
+   int x, y; 
+} POINT;
+
+#define SIZE 10
+
+POINT *pinit(int i)
+{
+    POINT *p;
+    p=malloc(sizeof(POINT));
+    if (!p) {
+        perror("malloc");
+        return(NULL);
+    }
+    p->x=i*2;
+    p->y=i*3;
+    return(p);
+}
+
+int main() 
+{ 
+   POINT *p1arr[SIZE]; 
+   POINT *pptr, *tptr;
+   
+   pptr=calloc(sizeof(POINT),SIZE);
+   if (!pptr) {
+       perror("calloc");
+       exit(1);
+   }
+   
+   for (int i=0; i<SIZE; i++) {
+       p1arr[i]=pinit(i);
+   }
+
+
+   bcopy(p1arr,pptr,SIZE*sizeof(POINT));
+
+   tptr=pptr;
+   for (int i=0; i<SIZE; i++, tptr++) {
+       printf("%d: %d %d\n",i,tptr->x, tptr->y);
+   }
+   
+   
+   return 0; 
+}
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+
+typedef struct Point { 
+   int x, y; 
+} POINT;
+
+#define SIZE 10
+
+POINT *pinit(int i)
+{
+    POINT *p;
+    p=malloc(sizeof(POINT));
+    if (!p) {
+        perror("malloc");
+        return(NULL);
+    }
+    p->x=i*2;
+    p->y=i*3;
+    return(p);
+}
+
+int main() 
+{ 
+   POINT *p1arr[SIZE]; 
+   POINT *pptr, *tptr;
+   
+   pptr=calloc(sizeof(POINT),SIZE);
+   if (!pptr) {
+       perror("calloc");
+       exit(1);
+   }
+   
+   for (int i=0; i<SIZE; i++) {
+       p1arr[i]=pinit(i);
+   }
+
+
+   for (int i=0; i<SIZE; i++) {
+       pptr[i]=*p1arr[i];
+   }
+
+   tptr=pptr;
+   for (int i=0; i<SIZE; i++, tptr++) {
+       printf("%d: %d %d\n",i,tptr->x, tptr->y);
+   }
+   
+   
+   return 0; 
+}
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct item {
+    int value;  /* Value of the item */
+    struct item *next_ptr; /* Pointer to the next item */
+} ListItem;
+
+
+void enter(struct item *first_ptr, const int value)
+{
+    ListItem *before_ptr;  /* Item before this one */
+    ListItem *after_ptr;   /* Item after this one */
+    ListItem *new_item_ptr;/* Item to add */
+
+    /* Create new item to add to the list */
+
+    before_ptr = first_ptr; /* Start at the beginning */
+    after_ptr =  before_ptr->next_ptr;
+
+    while (1) {
+        if (after_ptr == NULL)
+            break;
+
+        if (after_ptr->value >= value)
+            break;
+
+        /* Advance the pointers */
+        after_ptr = after_ptr->next_ptr;
+        before_ptr = before_ptr->next_ptr;
+    }
+
+    new_item_ptr = malloc(sizeof(struct item));
+    if (!new_item_ptr) {
+      perror("malloc");
+      exit(1);
+    }
+    new_item_ptr->value = value; /* Set value of item */
+
+    before_ptr->next_ptr = new_item_ptr;
+    new_item_ptr->next_ptr = after_ptr;
+}
+
+void print(ListItem *first_ptr)
+{
+    ListItem *cur_ptr; /* Pointer to the current item */
+
+    for (cur_ptr = first_ptr; cur_ptr != NULL; cur_ptr = cur_ptr->next_ptr)  {
+        printf("%d ", cur_ptr->value);
+    }
+    
+    printf("\n");
+}
+
+void dispose(ListItem *first_ptr)
+{
+    struct item *before_ptr;  /* Item before this one */
+
+    while (first_ptr) {
+      before_ptr=first_ptr;
+      first_ptr=first_ptr->next_ptr;
+      free(before_ptr); // Avoid Race 
+    }
+}
+
+int main()
+{
+    /* The linked list */
+    ListItem *head_ptr = NULL;
+
+    head_ptr = calloc(sizeof(ListItem),1);
+    if (!head_ptr) {
+      perror("calloc");
+      exit(1);
+    }
+
+    head_ptr->value = 0;
+    head_ptr->next_ptr = NULL;
+
+    enter(head_ptr, 5);
+    enter(head_ptr, 4);
+    enter(head_ptr, 8);
+    enter(head_ptr, 9);
+    enter(head_ptr, 1);
+    enter(head_ptr, 2);
+
+    print(head_ptr);
+
+    dispose(head_ptr);
+    return (0);
+}
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+ 
+// Data structure to store a Binary Search Tree node
+typedef struct n {
+    char *data;
+    int count;
+    struct n *left, *right;
+} Node;
+
+
+// Function to create a new binary tree node having given key
+Node* newNode(char *key)
+{
+    Node* node = malloc(sizeof(Node));
+    node->data = malloc(strlen(key)+1);
+    strcpy(node->data,key);
+    node->count=1;
+    node->left = node->right = NULL;
+ 
+    return node;
+}
+ 
+// Function to perform inorder traversal of the tree
+void inorder(Node* root)
+{
+    if (root == NULL) return;
+ 
+    inorder(root->left);
+    printf("%s:%d\n",root->data,root->count);
+    inorder(root->right);
+}
+
+// Recursive function to insert an key into BST using a reference parameter
+Node* insert(Node* root, char *key)
+{
+    // if the root is null, create a new node an return it
+    if (root == NULL) {
+        root = newNode(key);
+        return root;
+    }
+ 
+    // if given key is less than the root node, recurse for left subtree
+    // else recurse for right subtree
+    int cmp=strcmp(key,root->data);
+
+    if (cmp<0)
+        root->left=insert(root->left, key);
+    else if(cmp>0) // key >= root->data
+        root->right=insert(root->right, key);
+    else  // Same key, just increment counter 
+        root->count++;
+}
+
+// main function
+int main()
+{
+    Node* root = NULL;
+    char* keys[] = { "Troppo", "va", "la", "gatta", "al", "lardo", "che", "ci", "lascia", "lo", "zampino" };
+ 
+    for (int key=0; key<sizeof(keys)/sizeof(keys[0]); key++) {
+//        printf("Insert:%s\n",keys[key]);
+        root=insert(root, keys[key]);
+    }
+ 
+    inorder(root);
+    printf("-----\n");
+ 
+    char str[]="Sotto la panca la capra campa, sotto la panca la capra crepa"; // strtok doesn't want a const *
+    
+    char *p, *q;
+    q=str;
+    while (p=strtok(q," ")) {
+//        printf("Insert:%s\n",p);
+        root=insert(root, p);
+        q=NULL;
+    }
+    inorder(root);
+    return 0;
+}
+
+
+
+
+
+
+

@@ -1,0 +1,348 @@
+double (*f2(int n, double (*f1)(double f)))(double n);
+// Meaning: f2 is a function that takes two arguments:
+//    an integer
+//    a pointer to a function (that takes a double as argument and returns a double) 
+// f2 returns a pointer to a function (that take a double as argument and returns a double)
+
+
+
+// Example implementation of the above (Useless .. just an example)
+
+#include <stdio.h>
+#include <math.h>
+
+double f3(double n)
+{
+    return(sqrt(n)+1.0);
+}
+
+double f4(double n)
+{
+    return(pow(n,1.5));    
+}
+
+double (*f2(int n, double (*f1)(double f)))(double n)
+{  
+    double p=f1(n*(3.14/4));
+
+    printf("%lf\n",p);
+    if (p<0) {
+        return f4;
+    }
+    else {
+        return f3;
+    }
+}
+
+int main()
+{
+    double (*psin)(double) = cos;
+
+    printf("%p,%p - %p\n",f3,f4,f2(4,psin));
+}
+
+
+//---------------------------------------------------------------------------------
+// Code Snippets
+//---------------------------------------------------------------------------------
+
+#include <stdio.h>
+
+int f(int x, int *py, int **ppz)
+{
+  int y, z;
+  **ppz += 1; 
+   z  = **ppz;
+  *py += 2;
+   y = *py;
+   x += 3;
+   return x + y + z;
+}
+
+
+//---------------------------------------------------------------------------
+  
+void main()
+{
+   int c, *b, **a;
+   c = 4;
+   b = &c;
+   a = &b; 
+   printf( "%d\n", f(c,b,a));
+}
+
+//---------------------------------------------------------------------------
+
+
+
+#include <stdio.h>
+
+int main()
+{
+    const int j=2;
+//    int * const i=&j;
+//    int * i=&j;
+//    int const * i=&j;
+    
+    printf("j:%d\n",j);
+    *i=3;
+    printf("j:%d\n",j);
+    return(0);
+}
+
+//---------------------------------------------------------------------------
+
+
+
+#include <stdio.h>
+
+int main()
+{
+    int i=1;
+//    const int j=2;
+//    #define j 2
+    
+    switch(i) {
+        case j:
+            printf("i equal j\n");
+            break;
+        default:
+            break;
+    }
+    return(0);
+}
+
+//---------------------------------------------------------------------------
+
+
+
+#include <stdio.h> 
+
+int main() 
+{ 
+int x = 1; 
+switch (x) 
+{ 
+    case 2: printf("Choice is 1"); 
+        break; 
+    case 1+1: printf("Choice is 2"); 
+        break; 
+    } 
+    return 0; 
+} 
+
+//---------------------------------------------------------------------------
+
+
+
+
+#include <stdio.h> 
+
+int main() 
+{ 
+   int x = 1; 
+   switch (x) 
+   { 
+       x = x + 1; 
+       case 1: printf("Choice is 1\n"); 
+               break; 
+       case 2: printf("Choice is 2\n"); 
+                break; 
+       default: printf("Choice other than 1 and 2\n"); 
+                break;                    
+   } 
+   return 0; 
+}  
+
+
+//---------------------------------------------------------------------------
+
+
+#include <stdio.h> 
+
+int main() 
+{ 
+   int x = 4; 
+   switch (x) 
+   { 
+       default: 
+           printf("Choice other than 1 and 2\n"); 
+       case 1:
+           printf("Choice is 1\n"); 
+       case 2:
+           printf("Choice is 2\n"); 
+   } 
+   return 0; 
+}
+
+//---------------------------------------------------------------------------
+
+
+#include <stdio.h> 
+
+int main() 
+{ 
+   int x = 4; 
+   switch (x) 
+   { 
+       default: 
+           printf("Choice other than 1 and 2\n");
+           break;         
+       case 1: 
+           printf("Choice is 1\n"); 
+           break; 
+       case 2:
+           printf("Choice is 2\n"); 
+           break; 
+   } 
+   return 0; 
+}
+
+
+//---------------------------------------------------------------------------
+
+
+
+#include <stdio.h>
+int main()
+{
+    int i = 0;
+    switch (i)
+    {
+            
+        case '0': printf("0");
+                break;
+        case '1': printf("1");
+                break;
+        default: printf("Default");
+    }
+    return 0;
+} 
+
+
+//---------------------------------------------------------------------------
+
+
+#include <stdio.h>
+#define EVEN 0
+#define ODD 1
+
+int main()
+{
+    int i = 3;
+    switch (i%2)
+    {
+        case EVEN: printf("Even");
+                break;
+        case ODD: printf("Odd");
+                break;
+        default: printf("Default");
+    }
+    return 0;
+}
+
+//---------------------------------------------------------------------------
+
+
+
+#include <stdio.h>
+int i;
+int main()
+{
+    if (i);
+    else
+        printf("Else");
+    return 0;
+}
+
+//---------------------------------------------------------------------------
+
+
+
+#include <stdio.h>
+int main()
+{
+    int i = 1024, j=0;
+    for (; i; i /= 2, j++) ;
+    printf("%d",j);
+    return 0;
+}
+
+
+//---------------------------------------------------------------------------
+
+
+# include <stdio.h>
+int main()
+{
+   int i = 0;
+   for (i=0; i<20; i++)
+   {
+     switch(i)
+     {
+       case 0:
+         i += 5;
+       case 1:
+         i += 2;
+       case 5:
+         i += 5;
+       default:
+         i += 4;
+         break;
+     }
+     printf("%d  ", i);
+   }
+   return 0;
+}
+
+
+//---------------------------------------------------------------------------
+
+
+#include<stdio.h>
+int main()
+{
+   int n;
+   for (n = 9; n!=0; n--)
+     printf("n = %d", n--);
+   return 0;
+}
+
+//---------------------------------------------------------------------------
+
+
+
+#include <stdio.h>
+int main()
+{
+    int c = 5, no = 10;
+    do {
+        no /= c;
+    } while(c--);
+  
+    printf ("%d\n", no);
+    return 0;
+}
+
+//---------------------------------------------------------------------------
+
+
+
+#include <stdio.h>
+int main()
+{
+    int c = 5, no = 10;
+    do {
+        if (c) no /= c;
+    } while(c--);
+  
+    printf ("%d\n", no);
+    return 0;
+}
+
+
+
+
+
+
+

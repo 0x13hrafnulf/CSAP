@@ -1,0 +1,468 @@
+
+
+#include <stdio.h>
+
+#define STRING "This is a string"
+
+int main()
+{
+    char *s1=STRING;
+    char *s2=STRING;
+    char t1[]=STRING;
+    char t2[]=STRING;
+    printf("%p %p %p %p\n",s1,s2,t1,t2);
+    printf("%ld %ld\n",sizeof(s1),sizeof(t1));
+}
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+ 
+void myStrcat(char *a, char *b)
+{
+    int m = strlen(a);
+    int n = strlen(b);
+    int i;
+    for (i = 0; i <= n; i++)
+       a[m+i]  = b[i];
+}
+ 
+int main()
+{
+    char *str1 = "Geeks ";
+    char *str2 = "Quiz";
+    myStrcat(str1, str2);
+    printf("%s ", str1);
+    return 0;
+}
+
+
+
+
+# include <stdio.h>
+ 
+int main()
+{
+   char str1[] = "GeeksQuiz";
+   char str2[] = {'G', 'e', 'e', 'k', 's', 'Q', 'u', 'i', 'z'};
+   int n1 = sizeof(str1)/sizeof(str1[0]);
+   int n2 = sizeof(str2)/sizeof(str2[0]);
+   printf("n1 = %d, n2 = %d", n1, n2);
+   return 0;
+}
+
+
+
+
+#include <stdio.h>
+int fun(char *str1)
+{
+  char *str2 = str1;
+  while(*++str1);
+  return (str1-str2);
+}
+ 
+int main()
+{
+  char *str = "GeeksQuiz";
+  printf("%d", fun(str));
+  return 0;
+}
+
+
+
+
+#include <stdio.h>
+#include <string.h>
+
+int main()
+{
+    char p[20]; 
+    char *s = "string"; 
+    int length = strlen(s); 
+    int i; 
+    for (i = 0; i < length; i++) 
+        p[i] = s[length-i]; 
+    printf("%s", p);
+}
+
+
+
+
+#include <stdio.h>
+#include <string.h>
+
+int main()
+{
+    char p[20]; 
+    char *s = "string"; 
+    int length = strlen(s); 
+    int i; 
+    for (i = 1; i <= length; i++) 
+        p[i-1] = s[length-i]; 
+    printf("%s", p);
+}
+
+
+
+
+#include <stdio.h>
+int count() {
+   static int count = 0;
+   return ++count;
+}
+int main() {
+  printf("%d ", count());
+  printf("%d ", count());
+  printf("%d ", count());
+  return 0;
+}
+
+
+
+
+#include <stdio.h>
+int count() {
+   int count = 0;
+   return ++count;
+}
+int main() {
+  printf("%d ", count());
+  printf("%d ", count());
+  printf("%d ", count());
+  return 0;
+}
+
+
+
+
+#include <stdio.h>
+int count = 0;
+
+int count1() {
+   return ++count;
+}
+
+int count2() {
+   return ++count;
+}
+
+int main() {
+  printf("%d ", count1());
+  printf("%d ", count2());
+  printf("%d ", count1());
+  return 0;
+}
+
+
+
+
+#include <stdio.h>
+
+int count1() {
+   static int count=0;
+   return ++count;
+}
+
+int count2() {
+   static int count=0;
+   return ++count;
+}
+
+int main() {
+  printf("%d ", count1());
+  printf("%d ", count2());
+  printf("%d ", count1());
+  return 0;
+}
+
+
+
+
+#include <stdio.h>
+int fun()
+{
+    static int i=5;
+    if (--i){
+        printf("%d ",i);
+        fun();
+    }
+    return 0;
+}
+
+int main()
+{
+    fun();
+    return 0;
+}
+
+
+
+
+//%args:file.txt fileout.txt
+
+#include <stdio.h>
+#include <stdlib.h>
+
+void main(int argc, char *argv[])
+{
+    int c;
+    FILE *from, *to;
+
+    /*
+     * Check arguments.
+     */
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s from-file to-file\n", *argv);
+        exit(1);
+    }
+
+    /*
+     * Open the from-file in read mode
+     */
+    if ((from = fopen(argv[1], "r")) == NULL) {
+        perror(argv[1]);
+        exit(1);
+    }
+
+    /*
+     * Open the to-file in write mode.  
+     * If to-file does not exist, fopen will create it
+     * If to-file exists, it will be truncated
+     */
+    if ((to = fopen(argv[2], "w")) == NULL) {
+        perror(argv[2]);
+        exit(1);
+    }
+
+    printf("Reading %s\n",argv[1]);
+    printf("Writing %s\n",argv[2]);
+    /*
+     * Now read characters from from-file until we
+     * hit end-of-file, and put them onto to-file.
+     */
+
+    while ((c = getc(from)) != EOF)
+        putc(c, to);
+
+    /*
+     * Close both files.
+     */
+    fclose(from);
+    fclose(to);
+    printf("Done\n");
+    exit(0);
+}
+
+
+
+
+//%args:file.txt fileout.txt
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(argc, argv)
+int argc;
+char *argv[];
+{
+    FILE *from, *to;
+    char line[BUFSIZ];
+    /*
+     * Check our arguments.
+     */
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s from-file to-file\n", *argv);
+        exit(1);
+    }
+    /*
+     * Open the from-file in read mode
+     */
+    if ((from = fopen(argv[1], "r")) == NULL) {
+        perror(argv[1]);
+        exit(1);
+    }
+    /*
+     * Open the to-file in write mode.
+     */
+    if ((to = fopen(argv[2], "w")) == NULL) {
+        perror(argv[2]);
+        exit(1);
+    }
+    printf("Reading %s\n",argv[1]);
+    printf("Writing %s\n",argv[2]);
+    
+    /*
+     * Now read a line at a time from the from-file,
+     * and write it to the to-file.
+     */
+    while (fgets(line, BUFSIZ, from) != NULL)
+        fputs(line, to);
+    /*
+     * Close the files.
+     */
+    fclose(from);
+    fclose(to);
+    printf("Done\n");
+    exit(0);
+}
+
+
+
+
+
+//%args:file.txt fileout.txt
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char **argv)
+{
+    int n;
+    FILE *from, *to;
+    char buf[BUFSIZ];
+
+    /*
+     * Check our arguments.
+     */
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s from-file to-file\n", *argv);
+        exit(1);
+    }
+
+    /*
+     * Open the from-file in read mode
+     */
+    if ((from = fopen(argv[1], "r")) == NULL) {
+        perror(argv[1]);
+        exit(1);
+    }
+
+    /*
+     * Open the to-file in append mode
+     */
+    if ((to = fopen(argv[2], "a")) == NULL) {
+        perror(argv[2]);
+        exit(1);
+    }
+
+    printf("Reading %s\n",argv[1]);
+    printf("Writing %s\n",argv[2]);
+    /*
+     * Note that we only write the number of characters fread 
+     * read in, rather than always writing BUFSIZ characters.
+     */
+    while ((n = fread(buf, sizeof(char), BUFSIZ, from)) > 0)
+        fwrite(buf, sizeof(char), n, to);
+
+    /*
+     * Now close the files.
+     */
+    fclose(from);
+    fclose(to);
+    printf("Done\n");
+    exit(0);
+}
+
+
+
+
+
+//%args:file.txt
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define LINELEN 132
+#define NUMLINES 10
+
+void print(char *p[], int n)
+{
+    int i=0;
+    for (i=0; i<n; i++) {
+        printf("<%s>\n",p[i]);
+    }
+}
+
+void sort(char *p[], int n)
+{
+    int done=0;
+
+    while (!done) {
+        int item=n-1;
+        done=1;
+
+        while (item>0) {
+            if (strcmp(p[item],p[item-1])<0) {
+                char *temp=p[item];
+                p[item]=p[item-1];
+                p[item-1]=temp;
+                done=0;
+            }
+            item -=1;
+        }
+    }
+}
+
+void main(int argc, char *argv[])
+{
+    FILE *fp=NULL;
+    int nlines=NUMLINES;
+    int i=0;
+    char **array=NULL;
+    char line[LINELEN];
+
+    printf("Reading %s\n",argv[1]);
+    if (!(fp=fopen(argv[1],"r"))) {
+        perror("fopen");
+        exit(1);
+    }
+  
+    array=malloc(nlines*sizeof(*array));
+    if (!array) {
+        perror("malloc");
+        exit(1);
+    }
+
+    i=0;
+    while (fgets(line,sizeof(line),fp)) {
+        int l=strlen(line);
+
+        array[i]=malloc(l);
+        if (!array[i]) {
+            perror("malloc");
+            exit(1);
+        }
+    
+        strncpy(array[i],line,l-1);
+        array[i][l-1]='\0';
+
+        i +=1;
+
+        if (i>=nlines) {
+            nlines=nlines*2;
+            array=realloc(array,nlines*sizeof(*array));
+
+            if (!array) {
+                perror("malloc");
+                exit(1);
+            }
+        }
+    }
+    print(array,i);
+    printf("**** SORTING ******\n");
+    sort(array,i);
+    print(array,i);
+    printf("Exiting.\n");
+}
+
+
+
+
+
+
+
