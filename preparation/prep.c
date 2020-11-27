@@ -13,7 +13,7 @@
 ssize_t readline (int fd, char *buf, size_t sz, off_t *offset);
 void print(int out_fd);
 void parse(int in_fd, int out_fd);
-void read_dir(char *dirname, pid_t pid, time_t time);
+void read_dir(char *dirname, pid_t pid, time_t time, int channel);
 
 
 
@@ -96,11 +96,6 @@ ssize_t readline (int fd, char *buf, size_t sz, off_t *offset)
     return idx;
 }
 
-void print(int out_fd)
-{
-
-
-}
 void parse(int in_fd, int out_fd)
 {
     int n = 1;
@@ -110,14 +105,20 @@ void parse(int in_fd, int out_fd)
     size_t i = 0;
     time_t time;
 
+    int c;
     
 
     pid_t *childs;
     pid_t child_pid;
 
+    int channel[2]; 
+    if(pipe(channel) == -1) {    
+        perror("pipe call error");
+        exit(1);
+    }
 
-
-
+    char read_buffer[SIZE/2];
+    int k = 0;
     while ((len = readline (in_fd, buffer, SIZE, &offset)) != -1)
     {
         if(i == 0) 
@@ -144,20 +145,29 @@ void parse(int in_fd, int out_fd)
                 perror("Fork");
                 exit(1);
             }
-            else if (child_pid == 0) {
-
+            else if (child_pid == 0) 
+            {
                 int pid = getpid();
                 printf ("PID: %d, Line[%2zu] : %s (%zd chars)\n", pid, i, buffer, len);
-                read_dir(buffer, pid, time);
-
+                close(channel[0]);
+                read_dir(buffer, pid, time, channel[1]);
+                close(channel[1]);
                 exit(0);
             }
             else {
-                childs[i] = child_pid;
+                childs[k] = child_pid;              
             } 
 
         }
     } 
+
+    close(channel[1]);
+    while ((c = read(channel[0], read_buffer, sizeof(read_buffer)-1)) != 0) { 
+        read_buffer[c] = '\0'; 
+        write(out_fd, read_buffer, c);
+        printf("%s: %d bytes received by child\n", read_buffer, c); 
+    }
+    close(channel[0]);
 
     for(int j = 0; j < n; ++j)
     {
@@ -175,7 +185,7 @@ void parse(int in_fd, int out_fd)
 
 }
 
-void read_dir(char *dirname, pid_t pid, time_t time)
+void read_dir(char *dirname, pid_t pid, time_t time, int channel)
 {
     DIR* dirh;
     struct dirent *dirp;
@@ -199,7 +209,7 @@ void read_dir(char *dirname, pid_t pid, time_t time)
             continue;
         }
 
-        sprintf(pathname,"%s/%s",dirname,dirp->d_name);
+        snprintf(pathname, sizeof(pathname) , "%s/%s", dirname, dirp->d_name);
 
         if ((fd = open(pathname,O_RDONLY)) < 0) {
             fprintf(stderr,"%s:",pathname);
@@ -213,24 +223,32 @@ void read_dir(char *dirname, pid_t pid, time_t time)
             close(fd);
             continue;
         }
-        printf("mode:%o\n",info.st_mode & 07777);
+        //printf("mode:%o\n",info.st_mode & 07777);
 
         if (S_ISREG(info.st_mode))
         {
-            printf("%s is a file\n",pathname);
+            //printf("%s is a file\n",pathname);
 
             double dif = difftime(info.st_mtime, time);
-            printf("%.f difference\n", dif);
-            if(diff > 0)
+            //printf("%.f difference\n", dif);
+            printf("Child:%d writing %d bytes\n", pid, strlen(pathname));
+            pathname[strlen(pathname)] = '\n';
+
+            if(dif > 0)
             {
-                
+                int out = write(channel, pathname, strlen(pathname)); 
+                if(out < strlen(pathname))
+                {
+                    if (out < 0) perror("Error write in child");
+	                else printf("Child:%d wrote only %d out of %d bytes\n", pid, out, strlen(pathname));
+                }
             }
         }
 
         if (S_ISDIR(info.st_mode)) 
         {
-            printf("%s is a directory\n",pathname);
-            read_dir(pathname, pid, time);
+            //printf("%s is a directory\n",pathname);
+            read_dir(pathname, pid, time, channel);
         }
 
 
