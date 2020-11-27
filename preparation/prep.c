@@ -14,7 +14,7 @@ ssize_t readline (int fd, char *buf, size_t sz, off_t *offset);
 void print(int out_fd);
 void parse(int in_fd, int out_fd);
 void read_dir(char *dirname, pid_t pid, time_t time, int channel);
-
+void execute(char *command, char *name);
 
 
 int main(int argc, char *argv[]) 
@@ -23,12 +23,12 @@ int main(int argc, char *argv[])
     char *name[2];
 
 
-    if (argc != 3) {
+    if (argc < 3) {
         fprintf(stderr, "Usage: ./<program_name> <output_file> <input_file> <opitonal program to be executed>\n");
         exit(1);
     }
 
-    fd[0] = open(argv[1],O_WRONLY|O_CREAT, S_IRWXU);
+    fd[0] = open(argv[1], O_RDWR|O_CREAT, S_IRWXU);
     if (fd[0]<0) {
 	    fprintf(stderr,"%s:",fd[0]);
 	    perror("open");
@@ -45,11 +45,28 @@ int main(int argc, char *argv[])
     parse(fd[1], fd[0]);
     
 
+    int pid;
+
+    int channel[2];
+    if(pipe(channel) == -1) {    
+        perror("pipe call error");
+        exit(1);
+    }
+
+    char buffer[SIZE];
+    off_t offset = 0;
+    ssize_t len = 0;
 
     if(argc == 4)
     {
+         
+        while ((len = readline (fd[0], buffer, SIZE, &offset)) != -1)
+        {
+            buffer[len] = '\0';
+            execute(argv[3], buffer);
+        }
 
-
+        
     }
 
 
@@ -57,7 +74,33 @@ int main(int argc, char *argv[])
     close(fd[1]);
     return 0;
 }
+void execute(char *command, char *name)
+{
+    int pid, status;
+    if ((pid = fork()) < 0) {
+        perror("fork");
+        exit(1);
+    }
 
+    if (pid == 0) {
+
+        int len = 0;
+        char *p = &(command[strlen(command)-1]);
+        while (p != command && *p != '/') p--, len++;
+
+        p++;
+
+        execl(command, p, name, (char*)NULL);
+        exit(1);
+    }
+
+    if ((pid = waitpid(-1, &status, 0)) < 0) 
+    {
+        perror("waitpid");
+    }
+
+    printf ("Child:%d returned %d\n", pid, WEXITSTATUS(status));
+}
 
 ssize_t readline (int fd, char *buf, size_t sz, off_t *offset)
 {
@@ -260,3 +303,56 @@ void read_dir(char *dirname, pid_t pid, time_t time, int channel)
 }
 
 
+
+/*
+if(argc == 4)
+    {
+        
+        
+        int child, status;
+
+        if ((child = fork()) < 0) {
+            perror("fork");
+            exit(1);
+        }
+
+        if (child == 0) 
+        {
+
+            close(1); 	    
+            if (dup2(channel[1], 1) < 0) {
+                perror("dup2");
+                exit(1);
+	        }   
+
+            while ((len = readline (fd[0], buffer, SIZE, &offset)) != -1)
+            {
+                printf ("PID: %d, %s (%zd chars)\n", getpid(), buffer, len);
+                buffer[len] = '\0'; 
+                //execl(argv[3], buffer);
+            }
+            close(channel[1]);
+            exit(0);
+
+        }
+        else
+        {
+            int c = 0;
+            close(channel[1]);
+            while ((c = read(channel[0], buffer, sizeof(buffer)-1)) != 0) 
+            { 
+                buffer[c]='\n';
+                buffer[c+1] = '\0'; 
+                write(1, buffer, c+1);
+            }
+            close(channel[0]);
+        }
+
+
+        if ((pid = waitpid(-1, &status, 0)) < 0) {
+            perror("waitpid");
+        }
+
+        printf ("Child:%d returned %d\n", pid, WEXITSTATUS(status));
+    }
+*/
