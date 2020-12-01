@@ -42,11 +42,10 @@ int main(int argc, char *argv[])
 
 void parse(int in_fd)
 {
-    int n = 1;
+
     char buffer[SIZE];
     off_t offset = 0;
     ssize_t len = 0;
-    size_t i = 0;
 
     int n_lines = 0;
     int n_words = 0;
