@@ -17,8 +17,8 @@ void execute(char *name, int *lines, int *words, int *chars);
 
 int main(int argc, char *argv[]) 
 {
-    int fd[2];
-    char *name[2];
+    int fd;
+    char *name;
 
 
     if (argc < 2) {
@@ -26,16 +26,16 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    fd[0] = open(argv[1],O_RDONLY);
-    if (fd[0]<0) {
-	    fprintf(stderr,"%s:", fd[1]);
+    fd = open(argv[1],O_RDONLY);
+    if (fd < 0) {
+	    fprintf(stderr,"%s:", fd);
 	    perror("open");
 	    exit(1);
 	}
 
-    parse(fd[0]);  
+    parse(fd);  
 
-    close(fd[0]);
+    close(fd);
     return 0;
 }
 
