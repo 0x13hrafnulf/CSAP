@@ -193,7 +193,7 @@ void execute(char *name, int *lines, int *words, int *chars)
         if ((pid = waitpid(-1,&status,0)) < 0) {
             perror("waitpid");
         }
-        //printf ("Child:%d returned %d\n", pid, WEXITSTATUS(status));
+        printf ("Child:%d returned %d\n", pid, WEXITSTATUS(status));
 
     }
 
