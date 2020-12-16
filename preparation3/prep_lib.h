@@ -40,16 +40,15 @@ int shmid;
 #define RCVBUFSIZE 32   
 #define MAXPENDING 5  
 
-typedef enum chunk_status { available, waiting, done } file_status;
+typedef enum file_status { available, processed, done } file_status;
 
-typedef struct file_chunk {
+typedef struct files {
   char      filename[FILENAMELEN]; 
   pid_t     pid;
   file_status status;
-} file_part;
+} files;
 
-mailbox *mboxes;
-
+files* storage;
 
 void DieWithError(char *errorMessage)
 {
@@ -198,8 +197,8 @@ int initshm(int perms)
     return(-1);
   }
 
-  mboxes = shmat(shmid, NULL, 0);
-  if ((void *)mboxes == (void *)-1) {
+  storage = shmat(shmid, NULL, 0);
+  if ((void *)storage == (void *)-1) {
     perror("shmat");
     return(-1);
   }
@@ -208,7 +207,7 @@ int initshm(int perms)
 
 int removeshm()
 {
-  if (shmdt(mboxes) < 0) {
+  if (shmdt(storage) < 0) {
     perror("shmdt");
     return(-1);
   }
