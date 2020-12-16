@@ -12,10 +12,12 @@
 
 #include "prep_lib.h"
 
-#define SIZE 1024
+#define BUFSIZE 1024
 
 int imdone = 0;
 
+void handler(int sig);
+mailbox *getfreembox();
 
 int main(int argc, char *argv[]) 
 {

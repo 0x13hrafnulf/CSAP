@@ -12,8 +12,14 @@
 
 #include "prep_lib.h"
 
-#define SIZE 1024
+#define BUFSIZE 1024
+#define MD5EXE     "md5sum"
 
+
+void handler(int sig);
+mailbox *getwaitingmbox();
+int initmboxes();
+int computehash(mailbox *mbox);
 
 
 int main(int argc, char *argv[]) 
