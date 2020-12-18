@@ -24,31 +24,34 @@ int shmid;
 #define SHMKEY         0x12345
 #define SEMKEY         0x54321
 
-#define MBOXSIZE       sizeof(mailbox)
+#define BOXSIZE       sizeof(box)
 #define NUMBOXES       10
 
 
-#define SHMSIZE        (NUMBOXES * MBOXSIZE)
+#define SHMSIZE        (NUMBOXES * BOXSIZE)
 
-#define MBOXLOCK       0
-#define MBOXWAITING    1
+#define BOXLOCK       0
+#define BOXWAITING    1
 #define FREEBOXES      2
 
 #define LASTSEM        FREEBOXES
 #define NUMSEM         (LASTSEM + 1)
 
-#define RCVBUFSIZE 32   
 #define MAXPENDING 5  
 
-typedef enum file_status { available, processed, done } file_status;
+typedef enum box_status { available, processed, done } box_status;
 
-typedef struct files {
+typedef struct box {
   char      filename[FILENAMELEN]; 
+  char      path[FILENAMELEN]; 
   pid_t     pid;
-  file_status status;
-} files;
+  int fd;
+  int size; 
+  box_status status;
+  int offset;
+} box;
 
-files* storage;
+box* storage;
 
 void DieWithError(char *errorMessage)
 {
@@ -56,13 +59,13 @@ void DieWithError(char *errorMessage)
     exit(1);
 }
   
-void HandleTCPClient(int clntSocket) 
-{
-    char Buffer[RCVBUFSIZE];        
+void HandleTCPClient(int clntSocket, int size, char *buffer) 
+{    
     int recvMsgSize;                    
 
+    memset(buffer, 0, size);
     
-    if ((recvMsgSize = recv(clntSocket, Buffer, RCVBUFSIZE, 0)) < 0)
+    if ((recvMsgSize = recv(clntSocket, buffer, size, 0)) < 0)
         DieWithError("recv() failed");
 
 
@@ -71,11 +74,11 @@ void HandleTCPClient(int clntSocket)
         //if (send(clntSocket, Buffer, recvMsgSize, 0) != recvMsgSize)
         //   DieWithError("send() failed");
 
-        if ((recvMsgSize = recv(clntSocket, Buffer, RCVBUFSIZE, 0)) < 0)
+        if ((recvMsgSize = recv(clntSocket, buffer, size, 0)) < 0)
             DieWithError("recv() failed");
     }
 
-    close(clntSocket);    
+  close(clntSocket);      
 }  
 
 int CreateTCPServerSocket(unsigned short port) 
