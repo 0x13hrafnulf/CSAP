@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 
        
       }
-      else if(strcmp(parsed_string, "get"))
+      else if(strcmp(parsed_string, "get")==0)
       {
 
 
@@ -184,6 +184,15 @@ box *getfreebox()
 {
   for (int i = 0; i < NUMBOXES; i++) {
     if (storage[i].status == available) {
+      return(&storage[i]);
+    }
+  }
+  return(NULL);
+}
+box *getbox(char* name)
+{
+  for (int i = 0; i < NUMBOXES; i++) {
+    if (strcmp(storage[i].filename, name) == 0) {
       return(&storage[i]);
     }
   }
