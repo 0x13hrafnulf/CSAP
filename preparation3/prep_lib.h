@@ -32,7 +32,7 @@ int shmid;
 
 #define BOXLOCK       0
 #define BOXWAITING    1
-#define FREEBOXES      2
+#define FREEBOXES     2
 
 #define LASTSEM        FREEBOXES
 #define NUMSEM         (LASTSEM + 1)
@@ -79,6 +79,26 @@ void HandleTCPClient(int clntSocket, int size, char *buffer)
     }
 
   close(clntSocket);      
+}  
+void HandleTCPClientGet(int clntSocket, int size, char *buffer) 
+{    
+    int recvMsgSize;                    
+
+    memset(buffer, 0, size);
+    
+    if ((recvMsgSize = recv(clntSocket, buffer, size, 0)) < 0)
+        DieWithError("recv() failed");
+
+
+    while (recvMsgSize > 0)      
+    {  
+        //if (send(clntSocket, Buffer, recvMsgSize, 0) != recvMsgSize)
+        //   DieWithError("send() failed");
+
+        if ((recvMsgSize = recv(clntSocket, buffer, size, 0)) < 0)
+            DieWithError("recv() failed");
+    }
+     
 }  
 
 int CreateTCPServerSocket(unsigned short port) 
