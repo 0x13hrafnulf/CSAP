@@ -218,6 +218,7 @@ int main(int argc, char *argv[])
             printf("Child process: %d\n", (unsigned int) getpid());
             clntSock = AcceptTCPConnection(servSock);
             HandleTCPClientGet(clntSock, SIZE, buffer);
+            printf("%s\n", buffer);
             parsed_string = strtok(buffer, "\n");
             int part = atoi(parsed_string);            
 
