@@ -107,15 +107,15 @@ int main(int argc, char *argv[])
                 char readbuf[SIZE];
                 ssize_t len = 0;
 
-                if(i == N-1) chunk = size - N*chunk;
+                if(i == N-1) chunk = size - i*chunk;
 
                 len = readchunk(fd, readbuf, SIZE, &offset, chunk);
 
                 snprintf(buffer, sizeof(buffer) , "%d\n%s", i, readbuf);
+                printf("Offset:%d len:%d %s\n", chunk, len, readbuf);
  
-                send_handle_N(client_sockets[i], SIZE, buffer, &server_addr );
-
-
+                send_handle_N(client_sockets[i], SIZE, buffer, &server_addr);
+                exit(0);
             }
             else {
                 childs[i] = child_pid;              

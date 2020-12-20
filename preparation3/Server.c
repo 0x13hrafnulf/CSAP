@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     init_storage();
 
 
-    server_socket = create_tcpserver_socket(server_socket, &server_addr);
+    server_socket = create_tcpserver_socket(server_port, &server_addr);
 
 
     for (;;) 
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
               if(current_box->offset == offset)
               {
                 //p(BOXLOCK);
-                //printf("Offset:%d\n%s\n", current_box->offset, ptr);
+                printf("Offset:%d\n%s\n", current_box->offset, ptr);
                 write(current_box->fd, ptr, strlen(ptr));   
                 current_box->offset += 1;   
                 if(current_box->offset == N)
