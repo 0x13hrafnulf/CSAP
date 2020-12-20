@@ -15,13 +15,13 @@
 #include <sys/stat.h>
 
 
-#include "prep_lib.h"
+#include "socket_lib.h"
+#include "sem_lib.h"
 
 #define N 4
 #define SERVER_PORT 12345
 #define SIZE 1024
 
-void store_file(int servSock);
 int init_storage();
 ssize_t parse (int fd, char *buf, size_t sz, off_t *offset);
 box *getfreebox();
@@ -31,9 +31,12 @@ ssize_t readchunk (int fd, char *buf, size_t sz, off_t *offset, size_t chunk);
 
 int main(int argc, char *argv[]) 
 {
-    int servSock;  
-    int clntSock;                      
-    unsigned short servPort = SERVER_PORT;           
+    int server_socket;  
+    int client_socket;   
+    int server_sockets[N];                    
+    struct sockaddr_in server_addr; 
+    struct sockaddr_in client_addr; 
+    unsigned short server_port = SERVER_PORT;           
 
     box *current_box;
     int semvals[NUMSEM];
@@ -41,6 +44,17 @@ int main(int argc, char *argv[])
     semvals[FREEBOXES] = NUMBOXES;
     semvals[BOXLOCK] = 1;
     semvals[BOXWAITING] = 0;
+
+    int fd;
+    char buffer[SIZE];
+    pid_t *childs;
+    pid_t child_pid;
+
+    if (!(childs=malloc(N*sizeof(pid_t)))) 
+    {
+        perror("malloc");
+        exit(1);
+    }
 
     if (getsem(SEMPERM | IPC_CREAT) < 0) {
       exit(0);
@@ -58,56 +72,43 @@ int main(int argc, char *argv[])
       exit(0);
     } 
 
-    servSock = CreateTCPServerSocket(servPort);
-
-    pid_t *childs;
-    pid_t child_pid;
-
-    if (!(childs=malloc(N*sizeof(pid_t)))) 
-    {
-        perror("malloc");
-        exit(1);
-    }
-
-    char buffer[SIZE];
     init_storage();
 
 
-    int fd;
+    server_socket = create_tcpserver_socket(server_socket, &server_addr);
+
 
     for (;;) 
     {
-      clntSock = AcceptTCPConnection(servSock);
-      HandleTCPClient(clntSock, SIZE, buffer);
+      client_socket = accept_tcp_connection(server_socket, &client_addr);
+      recv_handle(client_socket, SIZE, buffer);
 
       printf("%s\n", buffer);
 
-      char fileName[FILENAMELEN]; 
+      char filename[FILENAMELEN]; 
       char *parsed_string;
       parsed_string = strtok(buffer, " ");
       if(strcmp(parsed_string, "put") == 0)
       {
+        current_box = getfreebox();
         parsed_string = strtok (NULL, " ");
-        snprintf(fileName, sizeof(fileName), "%s", parsed_string);
+        strncpy(current_box->filename, parsed_string, FILENAMELEN);    
+        strncpy(current_box->path, "./storage", FILENAMELEN);
         parsed_string = strtok (NULL, " ");
         int size = atoi(parsed_string);
-
-        current_box = getfreebox();
-        strncpy(current_box->filename, fileName, FILENAMELEN);
-        strncpy(current_box->path, "./storage", FILENAMELEN);
         current_box->status = processed;
         current_box->size = size;
         current_box->offset = 0;
-
+        
         snprintf(buffer, sizeof(buffer) , "%s/%s", current_box->path, current_box->filename);
         
-        fd = open(buffer, O_RDWR|O_CREAT, S_IRWXU);
-        if (fd<0) {
-          fprintf(stderr,"%s:",fd);
+        current_box->fd = open(buffer, O_RDWR|O_CREAT, S_IRWXU);
+        if(current_box->fd < 0) 
+        {
+          fprintf(stderr,"%s:", current_box->fd);
           perror("open");
           exit(1);
         }
-        current_box->fd = fd;
 
         for(int i = 0; i < N; ++i)
         {
@@ -119,19 +120,14 @@ int main(int argc, char *argv[])
           }
           else if (child_pid == 0) 
           {
-            int pid = getpid();
-
-            //printf("Child process: %d\n", (unsigned int) getpid());
-            clntSock = AcceptTCPConnection(servSock);
-            HandleTCPClient(clntSock, SIZE, buffer);
+            client_socket = accept_tcp_connection(server_socket, &client_addr);
+            recv_handle(client_socket, SIZE, buffer);
             parsed_string = strtok(buffer, "\n");
             int offset = atoi(parsed_string);
             
-
             char *ptr = buffer;
             ptr += strlen(parsed_string) + 1;
 
-            //printf("Offset:%d\n%s\n", offset, ptr);
             for(;;)
             {
               if(current_box->offset == offset)
@@ -160,105 +156,22 @@ int main(int argc, char *argv[])
         for(int i = 0; i < N;)
         {
           int status;
-          child_pid = waitpid(-1,&status,0);
+          child_pid = waitpid(-1, &status, 0);
           printf("Waiting for ANY child\n");
-          if (child_pid < 0){
+          if (child_pid < 0)
+          {
               perror("waitpid");
           }
           else if (child_pid == 0) break;
           else ++i;
           printf ("Child:%d returned %d\n", child_pid, WEXITSTATUS(status));
         }
-        close(fd);
-        current_box->fd = 0;
-        free(childs);
-       
+        current_box->status = done;
+        close(current_box->fd);
+        free(childs);  
       }
       else if(strcmp(parsed_string, "get") == 0)
-      {
-        parsed_string = strtok (NULL, " ");
-        snprintf(fileName, sizeof(fileName), "%s", parsed_string);
-
-        current_box = getbox(fileName);
-        snprintf(buffer, sizeof(buffer) , "%s/%s", current_box->path, current_box->filename);
-        
-        fd = open(buffer, O_RDONLY);
-        if (fd < 0) {
-            fprintf(stderr,"%s:", fd);
-            perror("open");
-            exit(1);
-        }
-
-        struct stat info;
-
-        if (fstat(fd, &info) == -1) 
-        {
-            perror("stat");
-            close(fd);
-        }
-
-        char buffer[SIZE];
-        int size = info.st_size;
-        int chunk = size / N;
-
-        printf("Filename: %s, size: %d\n", current_box->filename, current_box->size);
-
-        for(int i = 0; i < N; ++i)
-        {
-          child_pid = fork();
-          if (child_pid < 0) 
-          {
-              perror("Fork");
-              exit(1);
-          }
-          else if (child_pid == 0) 
-          {
-            int pid = getpid();
-
-            printf("Child process: %d\n", (unsigned int) getpid());
-            clntSock = AcceptTCPConnection(servSock);
-            HandleTCPClientGet(clntSock, SIZE, buffer);
-            printf("%s\n", buffer);
-            parsed_string = strtok(buffer, "\n");
-            int part = atoi(parsed_string);            
-
-            off_t offset = part*chunk;
-            ssize_t len = 0;
-
-            if(part == N-1) chunk = size - N*chunk;
-
-            len = readchunk(fd, buffer, SIZE, &offset, chunk);
-            printf("%s\n", buffer);
-
-            if (send(clntSock, buffer, SIZE, 0) != strlen(buffer))
-               DieWithError("send() failed");
-
-            close(clntSock); 
-            exit(0);
-          }
-          else 
-          {
-              childs[i] = child_pid;              
-          } 
-        }
-        
-        for(int i = 0; i < N;)
-        {
-          int status;
-          child_pid = waitpid(-1,&status,0);
-          printf("Waiting for ANY child\n");
-          if (child_pid < 0){
-              perror("waitpid");
-          }
-          else if (child_pid == 0) break;
-          else ++i;
-          printf ("Child:%d returned %d\n", child_pid, WEXITSTATUS(status));
-        }
-        free(childs);
-
-
-
-
+      {       
 
       }
 
@@ -270,18 +183,6 @@ int main(int argc, char *argv[])
 }
 
 
-
-void store_file(int servSock)
-{
-    int clntSock;                  
-
-    for (;;) 
-    {
-        clntSock = AcceptTCPConnection(servSock);
-        printf("with child process: %d\n", (unsigned int) getpid());
-        //HandleTCPClient(clntSock, SIZE,);
-    }
-}
 
 int init_storage()
 {

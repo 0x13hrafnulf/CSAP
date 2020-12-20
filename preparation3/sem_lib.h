@@ -1,5 +1,5 @@
-#ifndef MIDTERM3_H
-#define MIDTERM3_H
+#ifndef SEMLIB_H
+#define SEMLIB_H
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -36,8 +36,7 @@ int shmid;
 
 #define LASTSEM        FREEBOXES
 #define NUMSEM         (LASTSEM + 1)
-
-#define MAXPENDING 5  
+ 
 
 typedef enum box_status { available, processed, done } box_status;
 

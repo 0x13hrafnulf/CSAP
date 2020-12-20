@@ -14,6 +14,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include "socket_lib.h"
+
 #define SIZE 1024  
 
 #define SERVER_IP "127.0.0.1"
@@ -24,23 +26,20 @@ ssize_t readchunk (int fd, char *buf, size_t sz, off_t *offset,  size_t chunk);
 void executeSend(int sckt, struct sockaddr_in *addr, char *buf, int size);
 void executeRecv(int sckt, struct sockaddr_in *addr, char *buf, int size);
 
-void DieWithError(char *errorMessage)
-{
-    perror(errorMessage);
-    exit(1);
-}
 
 int main(int argc, char *argv[])
 {
-    int sock;
-    int sockets[N];                       
-    struct sockaddr_in servAddr; 
-    unsigned short servPort = SERVER_PORT;     
-    char *servIP;        
+    int client_socket;
+    int client_sockets[N];                       
+    struct sockaddr_in server_addr; 
+    struct sockaddr_in client_addr; 
+    unsigned short server_port = SERVER_PORT;   
+
+    char *server_ip;        
     char *command;              
-    char *fileName;                  
-    unsigned int stringLen;      
-    int bytesRcvd, totalBytesRcvd;   
+    char *filename;                  
+    unsigned int buffer_len;      
+    char buffer[SIZE];
 
     if ((argc < 3) || (argc > 4))   
     {
@@ -50,8 +49,8 @@ int main(int argc, char *argv[])
     }
 
     command = argv[1];  
-    servIP = SERVER_IP;            
-    fileName = argv[2];         
+    server_ip = SERVER_IP;            
+    filename = argv[2];         
 
     int fd;
     pid_t *childs;
@@ -62,6 +61,7 @@ int main(int argc, char *argv[])
         perror("malloc");
         exit(1);
     }
+
     if(strcmp(argv[1], "put") == 0) 
     {
         fd = open(argv[2], O_RDONLY);
@@ -79,7 +79,6 @@ int main(int argc, char *argv[])
             close(fd);
         }
 
-        char buffer[SIZE];
         int size = info.st_size;
         int chunk = size / N;
         //For parsing filename from pathname
@@ -91,24 +90,12 @@ int main(int argc, char *argv[])
 
         snprintf(buffer, sizeof(buffer) , "%s %s %d", command, p, size);
 
+        client_socket = establish_connection(&server_addr, server_ip, server_port);
 
-        if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-            DieWithError("socket() failed");
+        buffer_len = strlen(buffer);          
 
+        send_handle(client_socket, buffer, buffer_len, 0);
 
-        memset(&servAddr, 0, sizeof(servAddr));     
-        servAddr.sin_family      = AF_INET;             
-        servAddr.sin_addr.s_addr = inet_addr(servIP);   
-        servAddr.sin_port        = htons(servPort); 
-
-
-        if (connect(sock, (struct sockaddr *) &servAddr, sizeof(servAddr)) < 0)
-            DieWithError("connect() failed");
-
-        stringLen = strlen(buffer);          
-
-        if (send(sock, buffer, stringLen, 0) != stringLen)
-            DieWithError("send() sent a different number of bytes than expected");
 
         for(int i = 0; i < N; ++i)
         {
@@ -152,73 +139,11 @@ int main(int argc, char *argv[])
     }
     else if(strcmp(argv[1], "get") == 0)
     {
-        fd = open(argv[2], O_RDWR|O_CREAT, S_IRWXU);
-        if (fd < 0) {
-            fprintf(stderr,"%s:", fd);
-            perror("open");
-            exit(1);
-        }
-        
-        char buffer[SIZE];
-        snprintf(buffer, sizeof(buffer) , "%s %s", command, argv[2]);
-
-        if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-            DieWithError("socket() failed");
-
-
-        memset(&servAddr, 0, sizeof(servAddr));     
-        servAddr.sin_family      = AF_INET;             
-        servAddr.sin_addr.s_addr = inet_addr(servIP);   
-        servAddr.sin_port        = htons(servPort); 
-
-
-        if (connect(sock, (struct sockaddr *) &servAddr, sizeof(servAddr)) < 0)
-            DieWithError("connect() failed");
-
-        stringLen = strlen(buffer);          
-
-        if (send(sock, buffer, stringLen, 0) != stringLen)
-            DieWithError("send() sent a different number of bytes than expected");
-
-        for(int i = 0; i < N; ++i)
-        {
-            child_pid = fork();
-            if (child_pid < 0) {
-                perror("Fork");
-                exit(1);
-            }
-            else if (child_pid == 0) 
-            {
-                memset(buffer, 0, SIZE);    
-                snprintf(buffer, sizeof(buffer) , "%d\n%s", i, buffer);
- 
-                executeRecv(sockets[i], &servAddr, buffer, SIZE);
-
-                printf("i:%d\n%s\n", i, buffer);
-            }
-            else {
-                childs[i] = child_pid;              
-            } 
-        }
-        
-        for(int i = 0; i < N; ++i)
-        {
-            int status;
-            printf("Waiting for ANY child\n");
-            if ((child_pid = waitpid(-1,&status,0)) < 0) {
-                perror("waitpid");
-            }
-            printf ("Child:%d returned %d\n", child_pid, WEXITSTATUS(status));
-        }
-
-
-        free(childs);
-
 
     }
 
 
-    close(sock);
+    close(client_socket);
     close(fd);
     exit(0);
 }

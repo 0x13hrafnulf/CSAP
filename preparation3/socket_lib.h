@@ -1,5 +1,5 @@
-#ifndef MIDTERM3_H
-#define MIDTERM3_H
+#ifndef SOCKETLIB_H
+#define SOCKETLIB_H
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -12,6 +12,7 @@
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 
+#define MAXPENDING 5 
 
 void DieWithError(char *errorMessage)
 {
@@ -19,90 +20,105 @@ void DieWithError(char *errorMessage)
     exit(1);
 }
   
-void HandleTCPClient(int clntSocket, int size, char *buffer) 
+void recv_handle(int a_socket, int size, char *buffer) 
 {    
-    int recvMsgSize;                    
+    int recv_size;                    
 
     memset(buffer, 0, size);
     
-    if ((recvMsgSize = recv(clntSocket, buffer, size, 0)) < 0)
+    if ((recv_size = recv(a_socket, buffer, size, 0)) < 0)
         DieWithError("recv() failed");
 
 
-    while (recvMsgSize > 0)      
+    while (recv_size > 0)      
     {  
-        //if (send(clntSocket, Buffer, recvMsgSize, 0) != recvMsgSize)
-        //   DieWithError("send() failed");
-
-        if ((recvMsgSize = recv(clntSocket, buffer, size, 0)) < 0)
+        if ((recv_size = recv(a_socket, buffer, size, 0)) < 0)
             DieWithError("recv() failed");
     }
 
-  close(clntSocket);      
+  close(a_socket);      
 }  
-void HandleTCPClientGet(int clntSocket, int size, char *buffer) 
+
+void send_handle(int a_socket, int size, char *buffer, struct sockaddr_in *an_addr) 
 {    
-    int recvMsgSize;                    
+    if (send(a_socket, buffer, size, 0) != size)
+        DieWithError("send() sent a different number of bytes than expected");
+     
+}
 
-    memset(buffer, 0, size);
+void send_handle_N(int a_socket, int size, char *buffer, struct sockaddr_in *an_addr) 
+{    
     
-    if ((recvMsgSize = recv(clntSocket, buffer, size, 0)) < 0)
-        DieWithError("recv() failed");
+    if ((a_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+        DieWithError("socket() failed");
+
+    if (connect(a_socket, (struct sockaddr *) an_addr, sizeof(*an_addr)) < 0)
+        DieWithError("connect() failed");
 
 
-    while (recvMsgSize > 0)      
-    {  
-        //if (send(clntSocket, Buffer, recvMsgSize, 0) != recvMsgSize)
-        //   DieWithError("send() failed");
-
-        if ((recvMsgSize = recv(clntSocket, buffer, size, 0)) < 0)
-            DieWithError("recv() failed");
-    }
+    if (send(a_socket, buffer, size, 0) != size)
+        DieWithError("send() sent a different number of bytes than expected");
      
 }  
 
-int CreateTCPServerSocket(unsigned short port) 
+int accept_tcp_connection(int a_socket, struct sockaddr_in *an_addr) 
 {
-    int sock;                        
-    struct sockaddr_in ServAddr; 
+    int client_socket;                    
+    unsigned int client_len;            
+  
+    client_len = sizeof(*an_addr);
+    
+  
+    if ((client_socket = accept(a_socket, (struct sockaddr *) an_addr, 
+           &client_len)) < 0)
+        DieWithError("accept() failed");
+    
+    printf("Handling client %s\n", inet_ntoa(an_addr->sin_addr));
+
+    return client_socket;
+} 
+
+int create_tcpserver_socket(unsigned short port, struct sockaddr_in *an_addr) 
+{
+    int server_sock;                        
 
     
-    if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    if ((server_sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
         DieWithError("socket() failed");
       
     
-    memset(&ServAddr, 0, sizeof(ServAddr));   
-    ServAddr.sin_family = AF_INET;                
-    ServAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    ServAddr.sin_port = htons(port);              
+    memset(an_addr, 0, sizeof(*an_addr));   
+    an_addr->sin_family = AF_INET;                
+    an_addr->sin_addr.s_addr = htonl(INADDR_ANY);
+    an_addr->sin_port = htons(port);              
 
     
-    if (bind(sock, (struct sockaddr *) &ServAddr, sizeof(ServAddr)) < 0)
+    if (bind(server_sock, (struct sockaddr *) an_addr, sizeof(*an_addr)) < 0)
         DieWithError("bind() failed");
 
-    if (listen(sock, MAXPENDING) < 0)
+    if (listen(server_sock, MAXPENDING) < 0)
         DieWithError("listen() failed");
 
-    return sock;
+    return server_sock;
 }
-
-int AcceptTCPConnection(int servSock) 
+int establish_connection(struct sockaddr_in *an_addr, char *an_ip, unsigned short a_port) 
 {
-    int clntSock;                    
-    struct sockaddr_in ClntAddr; 
-    unsigned int clntLen;            
-  
-    clntLen = sizeof(ClntAddr);
-    
-  
-    if ((clntSock = accept(servSock, (struct sockaddr *) &ClntAddr, 
-           &clntLen)) < 0)
-        DieWithError("accept() failed");
-    
-    printf("Handling client %s\n", inet_ntoa(ClntAddr.sin_addr));
+    int a_socket;
 
-    return clntSock;
-} 
+    if ((a_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+            DieWithError("socket() failed");
+
+
+        memset(servAddr, 0, sizeof(*an_addr));     
+        servAddr->sin_family      = AF_INET;             
+        servAddr->sin_addr.s_addr = inet_addr(an_ip);   
+        servAddr->sin_port        = htons(a_port); 
+
+    if (connect(a_socket, (struct sockaddr *) an_addr, sizeof(*an_addr)) < 0)
+        DieWithError("connect() failed");
+    
+    return a_socket;
+}
 
 
 #endif
