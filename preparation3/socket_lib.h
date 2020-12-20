@@ -39,7 +39,7 @@ void recv_handle(int a_socket, int size, char *buffer)
   close(a_socket);      
 }  
 
-void send_handle(int a_socket, int size, char *buffer, struct sockaddr_in *an_addr) 
+void send_handle(int a_socket, int size, char *buffer) 
 {    
     if (send(a_socket, buffer, size, 0) != size)
         DieWithError("send() sent a different number of bytes than expected");
@@ -109,10 +109,10 @@ int establish_connection(struct sockaddr_in *an_addr, char *an_ip, unsigned shor
             DieWithError("socket() failed");
 
 
-        memset(servAddr, 0, sizeof(*an_addr));     
-        servAddr->sin_family      = AF_INET;             
-        servAddr->sin_addr.s_addr = inet_addr(an_ip);   
-        servAddr->sin_port        = htons(a_port); 
+        memset(an_addr, 0, sizeof(*an_addr));     
+        an_addr->sin_family      = AF_INET;             
+        an_addr->sin_addr.s_addr = inet_addr(an_ip);   
+        an_addr->sin_port        = htons(a_port); 
 
     if (connect(a_socket, (struct sockaddr *) an_addr, sizeof(*an_addr)) < 0)
         DieWithError("connect() failed");

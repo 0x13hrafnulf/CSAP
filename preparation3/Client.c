@@ -23,9 +23,6 @@
 #define N 4
 
 ssize_t readchunk (int fd, char *buf, size_t sz, off_t *offset,  size_t chunk);
-void executeSend(int sckt, struct sockaddr_in *addr, char *buf, int size);
-void executeRecv(int sckt, struct sockaddr_in *addr, char *buf, int size);
-
 
 int main(int argc, char *argv[])
 {
@@ -83,19 +80,18 @@ int main(int argc, char *argv[])
         int chunk = size / N;
         //For parsing filename from pathname
         int len = 0;
-        char *p = &(fileName[strlen(fileName)-1]);
-        while (p != fileName && *p != '/') p--, len++;
-        p++;
+        char *ptr = &(filename[strlen(filename)-1]);
+        while (ptr != filename && *ptr != '/') ptr--, len++;
+        ptr++;
         //
 
-        snprintf(buffer, sizeof(buffer) , "%s %s %d", command, p, size);
+        snprintf(buffer, sizeof(buffer) , "%s %s %d", command, ptr, size);
 
         client_socket = establish_connection(&server_addr, server_ip, server_port);
 
         buffer_len = strlen(buffer);          
 
-        send_handle(client_socket, buffer, buffer_len, 0);
-
+        send_handle(client_socket, buffer_len, buffer);
 
         for(int i = 0; i < N; ++i)
         {
@@ -117,7 +113,7 @@ int main(int argc, char *argv[])
 
                 snprintf(buffer, sizeof(buffer) , "%d\n%s", i, readbuf);
  
-                executeSend(sockets[i], &servAddr, buffer, SIZE);
+                send_handle_N(client_sockets[i], SIZE, buffer, &server_addr );
 
 
             }
@@ -148,51 +144,6 @@ int main(int argc, char *argv[])
     exit(0);
 }
 
-void executeSend(int sckt, struct sockaddr_in *addr, char *buf, int size)
-{
-    if ((sckt = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-        DieWithError("socket() failed");
-
-    if (connect(sckt, (struct sockaddr *) addr, sizeof(*addr)) < 0)
-        DieWithError("connect() failed");
-
-
-    if (send(sckt, buf, size, 0) != size)
-        DieWithError("send() sent a different number of bytes than expected");
-
-    exit(0);
-
-}
-void executeRecv(int sckt, struct sockaddr_in *addr, char *buf, int size)
-{
-    if ((sckt = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-        DieWithError("socket() failed");
-
-    if (connect(sckt, (struct sockaddr *) addr, sizeof(*addr)) < 0)
-        DieWithError("connect() failed");
-
-
-    if (send(sckt, buf, size, 0) != size)
-        DieWithError("send() sent a different number of bytes than expected");
-
-    
-    int recvMsgSize;                    
-    memset(buf, 0, size);
-    
-    if ((recvMsgSize = recv(sckt, buf, size, 0)) < 0)
-        DieWithError("recv() failed");
-
-
-    while (recvMsgSize > 0)      
-    {  
-        if ((recvMsgSize = recv(sckt, buf, size, 0)) < 0)
-            DieWithError("recv() failed");
-    }
-        
-
-    exit(0);
-
-}
 
 ssize_t readchunk (int fd, char *buf, size_t sz, off_t *offset, size_t chunk)
 {
