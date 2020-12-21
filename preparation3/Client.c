@@ -22,11 +22,12 @@
 #define SERVER_PORT 12345
 #define N 4
 
-ssize_t readchunk (int fd, char *buf, size_t sz, off_t *offset,  size_t chunk);
+ssize_t read_chunk (int fd, char *buf, size_t sz, off_t *offset,  size_t chunk);
 
 int main(int argc, char *argv[])
 {
     int client_socket;
+    int server_socket;
     int client_sockets[N];                       
     struct sockaddr_in server_addr; 
     struct sockaddr_in client_addr; 
@@ -92,6 +93,8 @@ int main(int argc, char *argv[])
         buffer_len = strlen(buffer);          
 
         send_handle(client_socket, buffer_len, buffer);
+        //client_socket = establish_connection(&server_addr, server_ip, server_port);
+        //sendfile(client_socket, fd, 0, size);
 
         for(int i = 0; i < N; ++i)
         {
@@ -109,12 +112,12 @@ int main(int argc, char *argv[])
 
                 if(i == N-1) chunk = size - i*chunk;
 
-                len = readchunk(fd, readbuf, SIZE, &offset, chunk);
+                len = read_chunk(fd, readbuf, SIZE, &offset, chunk);
 
                 snprintf(buffer, sizeof(buffer) , "%d\n%s", i, readbuf);
                 printf("Offset:%d len:%d %s\n", chunk, len, readbuf);
  
-                send_handle_N(client_sockets[i], SIZE, buffer, &server_addr);
+                send_handle_N(client_socket, SIZE, buffer, &server_addr);
                 exit(0);
             }
             else {
@@ -132,10 +135,71 @@ int main(int argc, char *argv[])
             printf ("Child:%d returned %d\n", child_pid, WEXITSTATUS(status));
         }
         free(childs);
+        
     }
     else if(strcmp(argv[1], "get") == 0)
     {
+        snprintf(buffer, sizeof(buffer) , "%s %s", command, filename);
 
+        client_socket = establish_connection(&server_addr, server_ip, server_port);
+
+        buffer_len = strlen(buffer);          
+
+        send_handle(client_socket, buffer_len, buffer);
+        printf("%s\n", buffer);
+        
+        fd = open(filename, O_RDWR|O_CREAT, S_IRWXU);
+        if(fd < 0) 
+        {
+          fprintf(stderr,"%s:", fd);
+          perror("open");
+          exit(1);
+        }
+        char *parsed_string;
+        for(int i = 0; i < N; ++i)
+        {
+          child_pid = fork();
+          if (child_pid < 0) 
+          {
+              perror("Fork");
+              exit(1);
+          }
+          else if (child_pid == 0) 
+          {
+            snprintf(buffer, sizeof(buffer) , "%d\n", i);
+            printf("%d waits\n", i);
+            send_handle_N_with_reply(client_sockets[i], SIZE, buffer, &server_addr);
+            parsed_string = strtok(buffer, "\n");
+            int offset = atoi(parsed_string);
+            
+            char *ptr = buffer;
+            ptr += strlen(parsed_string) + 1;
+            printf("Offset:%d\n%s\n", offset, ptr);
+         
+
+            exit(0);
+          }
+          else 
+          {
+              childs[i] = child_pid;              
+          } 
+        }
+        
+        for(int i = 0; i < N;)
+        {
+          int status;
+          child_pid = waitpid(-1, &status, 0);
+          printf("Waiting for ANY child\n");
+          if (child_pid < 0)
+          {
+              perror("waitpid");
+          }
+          else if (child_pid == 0) break;
+          else ++i;
+          printf ("Child:%d returned %d\n", child_pid, WEXITSTATUS(status));
+        }
+        free(childs);
+        
     }
 
 
@@ -145,7 +209,7 @@ int main(int argc, char *argv[])
 }
 
 
-ssize_t readchunk (int fd, char *buf, size_t sz, off_t *offset, size_t chunk)
+ssize_t read_chunk(int fd, char *buf, size_t sz, off_t *offset, size_t chunk)
 {
 
     ssize_t nchr = 0;

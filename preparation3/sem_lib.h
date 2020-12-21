@@ -53,20 +53,19 @@ typedef struct box {
 box* storage;
 
 
-int getsem(int perms)
+int get_semaphore(int permission)
 {
-  if ((semid = semget(SEMKEY, NUMSEM, perms)) < 0) {
+  if ((semid = semget(SEMKEY, NUMSEM, permission)) < 0) {
     perror("semget");
     return(-1);
   }
   return(0);
 }
 
-/* initsem -- semaphore initialization */
-int initsem(int vals[])
+int init_semaphores(int values[])
 {
   for (int i = 0; i < NUMSEM; i++) {
-    if (semctl(semid, i, SETVAL, vals[i]) < 0) {
+    if (semctl(semid, i, SETVAL, values[i]) < 0) {
       perror("semctl");
       return(-1);
     }
@@ -74,8 +73,7 @@ int initsem(int vals[])
   return(0);
 }
 
-/* Remove Semaphore Set */
-int removesem()
+int remove_semaphores()
 {
   if (semctl(semid, 0, IPC_RMID) < 0) {
     perror("removesem");
@@ -84,12 +82,11 @@ int removesem()
   return(0);
 }
 
-/* p -- semaphore p operation */
-int p(int semnum)
+int p(int semaphore_num)
 {
   struct sembuf p_buf;
 
-  p_buf.sem_num = semnum;
+  p_buf.sem_num = semaphore_num;
   p_buf.sem_op  = -1;
   p_buf.sem_flg = 0;
 
@@ -103,11 +100,11 @@ int p(int semnum)
 }
 
 /* v -- semaphore v operation */
-int v(int semnum)
+int v(int semaphore_num)
 {
   struct sembuf v_buf;
 
-  v_buf.sem_num = semnum;
+  v_buf.sem_num = semaphore_num;
   v_buf.sem_op  = 1;
   v_buf.sem_flg = 0;
 
@@ -120,9 +117,9 @@ int v(int semnum)
   }
 }
 
-int initshm(int perms)
+int init_sharedmemory(int permission)
 {
-  shmid = shmget(SHMKEY, SHMSIZE, perms);
+  shmid = shmget(SHMKEY, SHMSIZE, permission);
   if (shmid < 0) {
     perror("shmget");
     return(-1);
@@ -136,7 +133,7 @@ int initshm(int perms)
   return(0);
 }
 
-int removeshm()
+int remove_sharedmemory()
 {
   if (shmdt(storage) < 0) {
     perror("shmdt");

@@ -24,10 +24,10 @@
 
 int init_storage();
 ssize_t parse (int fd, char *buf, size_t sz, off_t *offset);
-box *getfreebox();
-box *getbox(char *name);
+box *get_freebox();
+box *get_box(char *name);
 void handler(int sig);
-ssize_t readchunk (int fd, char *buf, size_t sz, off_t *offset, size_t chunk);
+ssize_t read_chunk (int fd, char *buf, size_t sz, off_t *offset, size_t chunk);
 
 int main(int argc, char *argv[]) 
 {
@@ -56,14 +56,14 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    if (getsem(SEMPERM | IPC_CREAT) < 0) {
+    if (get_semaphore(SEMPERM | IPC_CREAT) < 0) {
       exit(0);
     }
 
-    if (initsem(semvals) < 0) {
+    if (init_semaphores(semvals) < 0) {
       exit(0);
     }
-    if (initshm(SHMPERM | IPC_CREAT) < 0) {
+    if (init_sharedmemory(SHMPERM | IPC_CREAT) < 0) {
       exit(0);
     }
 
@@ -81,16 +81,23 @@ int main(int argc, char *argv[])
     for (;;) 
     {
       client_socket = accept_tcp_connection(server_socket, &client_addr);
-      recv_handle(client_socket, SIZE, buffer);
+      recv_handle_no_close(client_socket, SIZE, buffer);
 
       printf("%s\n", buffer);
 
       char filename[FILENAMELEN]; 
       char *parsed_string;
       parsed_string = strtok(buffer, " ");
+
+
       if(strcmp(parsed_string, "put") == 0)
       {
-        current_box = getfreebox();
+        //parsed_string = strtok (NULL, " ");
+        //parsed_string = strtok (NULL, " ");
+        //int size = atoi(parsed_string);
+        //client_socket = accept_tcp_connection(server_socket, &client_addr);
+        //recv_handle(client_socket, size, buffer);
+        current_box = get_freebox();
         parsed_string = strtok (NULL, " ");
         strncpy(current_box->filename, parsed_string, FILENAMELEN);    
         strncpy(current_box->path, "./storage", FILENAMELEN);
@@ -133,7 +140,7 @@ int main(int argc, char *argv[])
               if(current_box->offset == offset)
               {
                 //p(BOXLOCK);
-                printf("Offset:%d\n%s\n", current_box->offset, ptr);
+                //printf("Offset:%d\n%s\n", current_box->offset, ptr);
                 write(current_box->fd, ptr, strlen(ptr));   
                 current_box->offset += 1;   
                 if(current_box->offset == N)
@@ -169,16 +176,80 @@ int main(int argc, char *argv[])
         current_box->status = done;
         close(current_box->fd);
         free(childs);  
+        
       }
       else if(strcmp(parsed_string, "get") == 0)
-      {       
+      {    
+        parsed_string = strtok (NULL, " ");   
+        current_box = get_box(parsed_string);
+        snprintf(buffer, sizeof(buffer) , "%s/%s", current_box->path, current_box->filename);
+        
+        current_box->fd = open(buffer, O_RDONLY);
+        if(current_box->fd < 0) 
+        {
+          fprintf(stderr,"%s:", current_box->fd);
+          perror("open");
+          exit(1);
+        }
 
+        int size = current_box->size;
+        int chunk = size / N;
+        send_handle(client_socket, SIZE, buffer);
+        
+        for(int i = 0; i < N; ++i)
+        {
+            child_pid = fork();
+            if (child_pid < 0) {
+                perror("Fork");
+                exit(1);
+            }
+            else if (child_pid == 0) 
+            {
+              
+              
+              printf("%s\n", buffer);
+              off_t offset = i*chunk;
+              char readbuf[SIZE];
+              ssize_t len = 0;
+
+              if(i == N-1) chunk = size - i*chunk;
+
+              len = read_chunk(current_box->fd, readbuf, SIZE, &offset, chunk);
+
+              snprintf(buffer, sizeof(buffer) , "%d\n%s", i, readbuf);
+              printf("Offset:%d len:%d %s\n", chunk, len, readbuf);
+              client_socket = accept_tcp_connection(server_socket, &client_addr);
+              recv_handle_with_reply(client_socket, SIZE, readbuf, buffer);
+              
+
+              exit(0);
+            }
+            else {
+                childs[i] = child_pid;              
+            } 
+        }
+        
+        for(int i = 0; i < N; ++i)
+        {
+            int status;
+            printf("Waiting for ANY child\n");
+            if ((child_pid = waitpid(-1,&status,0)) < 0) {
+                perror("waitpid");
+            }
+            printf ("Child:%d returned %d\n", child_pid, WEXITSTATUS(status));
+        }
+
+        current_box->status = done;
+        close(current_box->fd);
+
+        free(childs); 
+        
       }
 
     }
 
-
-    
+    remove_semaphores();
+    remove_sharedmemory();
     return 0;
 }
 
@@ -195,7 +266,7 @@ int init_storage()
   return(0);
 }
 
-box *getfreebox()
+box *get_freebox()
 {
   for (int i = 0; i < NUMBOXES; i++) {
     if (storage[i].status == available) {
@@ -204,7 +275,7 @@ box *getfreebox()
   }
   return(NULL);
 }
-box *getbox(char* name)
+box *get_box(char* name)
 {
   for (int i = 0; i < NUMBOXES; i++) {
     if (strcmp(storage[i].filename, name) == 0) {
@@ -217,13 +288,13 @@ box *getbox(char* name)
 void handler(int sig)
 {
   if (sig == SIGINT) {
-    removesem();
-    removeshm();
+    remove_semaphores();
+    remove_sharedmemory();
     exit(0);
   }
 }
 
-ssize_t readchunk (int fd, char *buf, size_t sz, off_t *offset, size_t chunk)
+ssize_t read_chunk (int fd, char *buf, size_t sz, off_t *offset, size_t chunk)
 {
 
     ssize_t nchr = 0;
