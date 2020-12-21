@@ -218,6 +218,7 @@ int main(int argc, char *argv[])
 
               snprintf(buffer, sizeof(buffer) , "%d\n%s", i, readbuf);
               printf("Offset:%d len:%d %s\n", chunk, len, readbuf);
+              
               client_socket = accept_tcp_connection(server_socket, &client_addr);
               recv_handle_with_reply(client_socket, SIZE, readbuf, buffer);
               

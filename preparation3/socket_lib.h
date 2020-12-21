@@ -117,6 +117,7 @@ void send_handle_N_with_reply(int a_socket, int size, char *buffer, struct socka
     
     int recv_size;     
     int total = 0;
+    
     while (total < size)
     {
         if ((recv_size = recv(a_socket, buffer, size, 0)) <= 0)
