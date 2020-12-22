@@ -22,7 +22,15 @@
 #define SERVER_PORT 12345
 #define N 4
 
+#define SHMKEY         0x12345
+int shmid;
+
 ssize_t read_chunk (int fd, char *buf, size_t sz, off_t *offset,  size_t chunk);
+int init_sharedmemory(int permission);
+int remove_sharedmemory();
+void handler(int sig);
+
+int *file_offset;
 
 int main(int argc, char *argv[])
 {
@@ -38,6 +46,16 @@ int main(int argc, char *argv[])
     char *filename;                  
     unsigned int buffer_len;      
     char buffer[SIZE];
+
+    if (init_sharedmemory(0600 | IPC_CREAT) < 0) {
+        exit(0);
+    }
+
+
+    if (signal(SIGINT, handler) < 0) {
+        perror("signal");
+        exit(0);
+    } 
 
     if ((argc < 3) || (argc > 4))   
     {
@@ -169,13 +187,30 @@ int main(int argc, char *argv[])
             snprintf(buffer, sizeof(buffer) , "%d\n", i);
             printf("%d waits\n", i);
             send_handle_N_with_reply(client_sockets[i], SIZE, buffer, &server_addr);
+            //printf("%s\n", buffer);
             parsed_string = strtok(buffer, "\n");
             int offset = atoi(parsed_string);
             
             char *ptr = buffer;
             ptr += strlen(parsed_string) + 1;
-            printf("Offset:%d\n%s\n", offset, ptr);
-         
+            //printf("%d\n%s\n", offset, ptr);
+
+            for(;;)
+            {
+              if(*file_offset == offset)
+              {
+                //p(BOXLOCK);
+                //printf("Offset:%d\n%s\n", current_box->offset, ptr);
+                write(fd, ptr, strlen(ptr));   
+                *file_offset = (*file_offset) + 1;   
+                if(*file_offset == N)
+                {
+                  *file_offset = 0;
+                }
+                //v(BOXLOCK);
+                break;
+              }
+            }
 
             exit(0);
           }
@@ -205,6 +240,7 @@ int main(int argc, char *argv[])
 
     close(client_socket);
     close(fd);
+    remove_sharedmemory();
     exit(0);
 }
 
@@ -244,4 +280,42 @@ ssize_t read_chunk(int fd, char *buf, size_t sz, off_t *offset, size_t chunk)
     *offset += idx;
 
     return idx;
+}
+
+int init_sharedmemory(int permission)
+{
+  shmid = shmget(SHMKEY, 4, permission);
+  if (shmid < 0) {
+    perror("shmget");
+    return(-1);
+  }
+
+  file_offset = shmat(shmid, NULL, 0);
+  if ((void *)file_offset == (void *)-1) {
+    perror("shmat");
+    return(-1);
+  }
+  return(0);
+}
+
+int remove_sharedmemory()
+{
+  if (shmdt(file_offset) < 0) {
+    perror("shmdt");
+    return(-1);
+  }
+
+  if (shmctl(shmid, IPC_RMID, NULL) < 0) {
+    perror("shmctl");
+    return(-1);
+  }
+
+  return(0);
+}
+void handler(int sig)
+{
+  if (sig == SIGINT) {
+    remove_sharedmemory();
+    exit(0);
+  }
 }

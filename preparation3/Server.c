@@ -194,7 +194,6 @@ int main(int argc, char *argv[])
 
         int size = current_box->size;
         int chunk = size / N;
-        send_handle(client_socket, SIZE, buffer);
         
         for(int i = 0; i < N; ++i)
         {
@@ -205,24 +204,20 @@ int main(int argc, char *argv[])
             }
             else if (child_pid == 0) 
             {
-              
-              
-              printf("%s\n", buffer);
+              client_socket = accept_tcp_connection(server_socket, &client_addr);
+              recv_handle_no_close(client_socket, SIZE, buffer);
               off_t offset = i*chunk;
               char readbuf[SIZE];
               ssize_t len = 0;
-
               if(i == N-1) chunk = size - i*chunk;
 
               len = read_chunk(current_box->fd, readbuf, SIZE, &offset, chunk);
 
               snprintf(buffer, sizeof(buffer) , "%d\n%s", i, readbuf);
-              printf("Offset:%d len:%d %s\n", chunk, len, readbuf);
+              printf("%s\n", buffer);
               
-              client_socket = accept_tcp_connection(server_socket, &client_addr);
-              recv_handle_with_reply(client_socket, SIZE, readbuf, buffer);
+              send_handle(client_socket, SIZE, buffer);
               
-
               exit(0);
             }
             else {

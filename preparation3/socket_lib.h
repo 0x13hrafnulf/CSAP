@@ -30,40 +30,26 @@ void send_handle(int a_socket, int size, char *buffer)
 void recv_handle(int a_socket, int size, char *buffer) 
 {    
     int recv_size;                    
-
+    printf("I am in recv_handle\n");
     memset(buffer, 0, size);
     
     if ((recv_size = recv(a_socket, buffer, size, 0)) < 0)
         DieWithError("recv() failed");
 
-
-    while (recv_size > 0)      
-    {  
-        if ((recv_size = recv(a_socket, buffer, size, 0)) < 0)
-            DieWithError("recv() failed");
-    }
- printf("Recv handle: %s\n", buffer);
   close(a_socket);      
 }
 
 void recv_handle_no_close(int a_socket, int size, char *buffer) 
 {    
-    int recv_size;                    
-
+    int recv_size;                   
     memset(buffer, 0, size);
     
     if ((recv_size = recv(a_socket, buffer, size, 0)) < 0)
         DieWithError("recv() failed");
 
+    
+} 
 
-    while (recv_size > 0)      
-    {  
-        if ((recv_size = recv(a_socket, buffer, size, 0)) < 0)
-            DieWithError("recv() failed");
-    }
-     printf("Recv handle no close: %s\n", buffer);
-     
-}  
 void recv_handle_with_reply(int a_socket, int size, char *buffer, char* reply_buffer) 
 {    
    int recv_size;                    
@@ -74,18 +60,28 @@ void recv_handle_with_reply(int a_socket, int size, char *buffer, char* reply_bu
         DieWithError("recv() failed");
 
     send_handle(a_socket, size, reply_buffer);
-    while (recv_size > 0)      
-    {  
-        if ((recv_size = recv(a_socket, buffer, size, 0)) < 0)
-            DieWithError("recv() failed");
-
-    }
-
 
   close(a_socket);   
      
 }  
+void send_handle_with_reply(int a_socket, int size, char *buffer) 
+{    
 
+    if (send(a_socket, buffer, size, 0) != size)
+        DieWithError("send() sent a different number of bytes than expected");
+    
+    
+    int recv_size;     
+    int total = 0;
+    memset(buffer, 0, size);
+    while (total < size)
+    {
+        if ((recv_size = recv(a_socket, buffer, size, 0)) <= 0)
+            DieWithError("recv() failed or connection closed prematurely");
+        total += recv_size; 
+    } 
+     
+} 
 
 
 void send_handle_N(int a_socket, int size, char *buffer, struct sockaddr_in *an_addr) 
@@ -115,16 +111,17 @@ void send_handle_N_with_reply(int a_socket, int size, char *buffer, struct socka
     if (send(a_socket, buffer, size, 0) != size)
         DieWithError("send() sent a different number of bytes than expected");
     
+    
     int recv_size;     
     int total = 0;
-    
+
+    memset(buffer, 0, size);
     while (total < size)
     {
         if ((recv_size = recv(a_socket, buffer, size, 0)) <= 0)
             DieWithError("recv() failed or connection closed prematurely");
         total += recv_size; 
-    }
-    //recv_handle(a_socket, size, buffer);    
+    }   
      
 } 
 
@@ -141,7 +138,7 @@ int accept_tcp_connection(int a_socket, struct sockaddr_in *an_addr)
         DieWithError("accept() failed");
     
     printf("Handling client %s\n", inet_ntoa(an_addr->sin_addr));
-    printf("I am here\n");
+
     return client_socket;
 } 
 
