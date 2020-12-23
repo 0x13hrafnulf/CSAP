@@ -1,0 +1,9 @@
+#!/bin/sh
+PORT=16000
+HOST=127.0.0.1
+FILE=input.file
+if [ ! -f $FILE ]; then
+    echo "Please create $FILE"
+    exit
+fi
+ncat $HOST $PORT < $FILE | od -t f8 | awk '{ printf "Min:%lf\nMax:%lf\n",$3,$2; exit}'
